@@ -4,6 +4,8 @@ Welcome to **DevForces**, a full-stack web platform where **web developers compe
 This project is built using **Turborepo** for scalable monorepo management.
 
 ---
+![Uploading image.png…]()
+
 
 ## 🚀 Overview
 
