@@ -1,13 +1,8 @@
 {
-  "name": "backend",
+  "name": "store",
   "module": "index.ts",
   "type": "module",
   "private": true,
-  "scripts": {
-    "dev": "bun run index.ts",
-    "build": "bun build index.ts",
-    "start": "bun run index.ts"
-  },
   "devDependencies": {
     "@types/bun": "latest"
   },
@@ -15,7 +10,8 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@types/express": "^5.0.5",
-    "express": "^5.1.0"
+    "@prisma/client": "^6.19.0",
+    "@prisma/extension-accelerate": "^2.0.2",
+    "prisma": "^6.19.0"
   }
 }

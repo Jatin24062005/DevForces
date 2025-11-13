@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum SubmissionStatus {
+  PENDING
+  SCORING
+  SCORED
+  FAILED
+}
+
+model User {
+  id          String     @id @default(uuid())
+  email       String     @unique
+  profileName String?
+  role        Role       @default(USER)
+  profileImage String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  submissions Submission[]        // all submissions by user
+  participants ContestParticipant[] // contests the user participates in
+  adminActions AdminAction[]       // admin actions performed (if admin)
+  contestsCreated Contest[]        @relation("ContestCreatedBy")
+}
+
+model Contest {
+  id          String            @id @default(uuid())
+  title       String
+  slug        String            @unique
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  createdById String? 
+  createdBy   User?             @relation("ContestCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  problems    ContestProblem[]  // problems attached to this contest (order/index)
+  submissions Submission[]      // submissions made in this contest
+  participants ContestParticipant[]
+}
+
+model Problem {
+  id          String            @id @default(uuid())
+  title       String
+  slug        String            @unique
+  statement   String?
+  maxPoints   Int               @default(50)   // default points scale
+  timeLimitMs Int?              // optional meta
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  contestProblems ContestProblem[]
+  submissions Submission[]
+  testcases  Testcase[]         // optional if you later add tests
+}
+
+model ContestProblem {
+  id        String   @id @default(uuid())
+  contestId String
+  contest   Contest  @relation(fields: [contestId], references: [id])
+  problemId String
+  problem   Problem  @relation(fields: [problemId], references: [id])
+  index     String   // "A", "B", or numeric order
+  createdAt DateTime @default(now())
+
+  @@unique([contestId, index])
+  @@unique([contestId, problemId])
+}
+
+model Testcase {
+  id        String   @id @default(uuid())
+  problemId String
+  problem   Problem  @relation(fields: [problemId], references: [id])
+  input     String
+  output    String
+  isPublic  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Submission {
+  id          String           @id @default(uuid())
+  userId      String
+  user        User             @relation(fields: [userId], references: [id])
+  contestId   String?
+  contest     Contest?         @relation(fields: [contestId], references: [id])
+  problemId   String
+  problem     Problem          @relation(fields: [problemId], references: [id])
+  code        String           // source code text
+  lang        String
+  codeHash    String?          // sha256(normalize(code)+lang+problemId) for caching
+  attempt     Int              @default(1)
+  status      SubmissionStatus @default(PENDING)
+  llmScore    Float?           // 0..maxPoints (e.g., 0..50)
+  llmDetails  Json?            // JSON breakdown returned by LLM
+  finalScore  Float?           // combined final score (maybe same as llmScore)
+  createdAt   DateTime         @default(now())
+  scoredAt    DateTime?
+  updatedAt   DateTime         @updatedAt
+
+  @@index([contestId])
+  @@index([userId])
+  @@index([problemId, userId])
+  @@index([codeHash])
+}
+
+model ContestParticipant {
+  id         String   @id @default(uuid())
+  contestId  String
+  contest    Contest  @relation(fields: [contestId], references: [id])
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  bestScores Json     @default("{}") // {"<problemId>": score, ...}
+  totalScore Float    @default(0)    // sum of best scores
+  solvedCount Int    @default(0)
+  lastUpdate DateTime @updatedAt
+
+  @@unique([contestId, userId])
+  @@index([contestId, totalScore])
+}
+
+model LlmCache {
+  id        String   @id @default(uuid())
+  hash      String   @unique
+  llmScore  Float
+  details   Json
+  createdAt DateTime @default(now())
+}
+
+model AdminAction {
+  id         String   @id @default(uuid())
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id])
+  actionType String   // e.g., "OVERRIDE_SCORE", "REJUDGE", "REBUILD_TOPN"
+  targetType String   // e.g., "submission", "participant"
+  targetId   String
+  payload    Json?
+  reason     String?
+  createdAt  DateTime @default(now())
+}
