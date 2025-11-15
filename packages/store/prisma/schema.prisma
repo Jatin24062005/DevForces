@@ -150,3 +150,11 @@ model AdminAction {
   reason     String?
   createdAt  DateTime @default(now())
 }
+
+model OTP {
+  id        String   @id @default(uuid())
+  email     String
+  oldOTP    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
