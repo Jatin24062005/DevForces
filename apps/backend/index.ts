@@ -6,6 +6,12 @@ import contestRoutes from "./Routers/contestRoutes";
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
+import sgMail from '@sendgrid/mail'
+
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY as string)
+// Note: If you need EU data residency, configure it in your SendGrid account settings
+// or use a EU-specific API key
 
 const app = express();
 app.use(express.json());
