@@ -3,9 +3,10 @@ generator client {
   output   = "../generated/prisma"
 }
 
+
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      =  env("DATABASE_URL")
 }
 
 enum Role {
